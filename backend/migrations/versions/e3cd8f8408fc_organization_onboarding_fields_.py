@@ -10,6 +10,21 @@ from typing import Sequence, Union
 from alembic import op
 import sqlalchemy as sa
 
+from sqlalchemy.dialects import postgresql
+
+registration_type_enum = postgresql.ENUM(
+    'LLC', 'PLC', 'PARTNERSHIP', 'SOLE_PROPRIETORSHIP', 'NGO', 'UNKNOWN',
+    name='registrationtype', create_type=False,
+)
+industry_enum = postgresql.ENUM(
+    'ELECTRONICS', 'COMPUTERS', 'GAMES', 'HOME_GOODS', 'TOYS', 'CLOTHING',
+    'BEAUTY', 'FOOD', 'HEALTH', 'HOUSEHOLD', 'SPORTS', 'OTHER',
+    name='industry', create_type=False,
+)
+organization_role_enum = postgresql.ENUM(
+    'OWNER', 'ADMIN', 'MEMBER',
+    name='organizationrole', create_type=False,
+)
 
 # revision identifiers, used by Alembic.
 revision: str = 'e3cd8f8408fc'
@@ -31,40 +46,47 @@ def upgrade() -> None:
     op.execute('DROP TYPE IF EXISTS industry')
     op.execute('DROP TYPE IF EXISTS registrationtype')
 
+    bind = op.get_bind()
+    registration_type_enum.create(bind, checkfirst=False)
+    industry_enum.create(bind, checkfirst=False)
+    organization_role_enum.create(bind, checkfirst=False)
+
     op.create_table(
         'organizations',
         sa.Column('name', sa.String(length=255), nullable=False),
         sa.Column(
             'registration_type',
-            sa.Enum(
-                'LLC',
-                'PLC',
-                'PARTNERSHIP',
-                'SOLE_PROPRIETORSHIP',
-                'NGO',
-                'UNKNOWN',
-                name='registrationtype',
-            ),
+            # sa.Enum(
+            #     'LLC',
+            #     'PLC',
+            #     'PARTNERSHIP',
+            #     'SOLE_PROPRIETORSHIP',
+            #     'NGO',
+            #     'UNKNOWN',
+            #     name='registrationtype',
+            # ),
+            registration_type_enum,
             nullable=False,
         ),
         sa.Column('registration_code', sa.String(length=255), nullable=False),
         sa.Column(
             'industry_type',
-            sa.Enum(
-                'ELECTRONICS',
-                'COMPUTERS',
-                'GAMES',
-                'HOME_GOODS',
-                'TOYS',
-                'CLOTHING',
-                'BEAUTY',
-                'FOOD',
-                'HEALTH',
-                'HOUSEHOLD',
-                'SPORTS',
-                'OTHER',
-                name='industry',
-            ),
+            # sa.Enum(
+            #     'ELECTRONICS',
+            #     'COMPUTERS',
+            #     'GAMES',
+            #     'HOME_GOODS',
+            #     'TOYS',
+            #     'CLOTHING',
+            #     'BEAUTY',
+            #     'FOOD',
+            #     'HEALTH',
+            #     'HOUSEHOLD',
+            #     'SPORTS',
+            #     'OTHER',
+            #     name='industry',
+            # ),
+            industry_enum,
             nullable=False,
         ),
         sa.Column('website', sa.String(length=255), nullable=True),
@@ -105,7 +127,8 @@ def upgrade() -> None:
         sa.Column('organization_id', sa.UUID(), nullable=False),
         sa.Column(
             'role',
-            sa.Enum('OWNER', 'ADMIN', 'MEMBER', name='organizationrole'),
+            # sa.Enum('OWNER', 'ADMIN', 'MEMBER', name='organizationrole'),
+            organization_role_enum,
             nullable=False,
         ),
         sa.Column('id', sa.UUID(), nullable=False),
@@ -213,7 +236,9 @@ def downgrade() -> None:
     op.execute('DROP TYPE IF EXISTS registrationtype')
     op.execute('DROP TYPE IF EXISTS organizationrole')
     op.execute('DROP TYPE IF EXISTS industry')
-
+    bind = op.get_bind()
+    industry_enum.create(bind, checkfirst=False)
+    organization_role_enum.create(bind, checkfirst=False)
     op.create_table(
         'organizations',
         sa.Column('name', sa.String(length=255), nullable=False),
