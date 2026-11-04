@@ -1,10 +1,16 @@
 # Render Blueprint for the SabiCheck backend.
 # Deploy with: Render Dashboard -> New -> Blueprint -> select this repository.
 #
-# NOTE: Render cannot automatically convert the database URL to the asyncpg
-# driver, so DATABASE_URL_ASYNC must be filled in manually after the first
-# deploy (copy DATABASE_URL_SYNC and change the prefix to
-# postgresql+asyncpg:// and sslmode=require to ssl=require).
+# The database is hosted on Neon (https://neon.tech), not on Render.
+# Set both DATABASE_URL_* values manually in the Render dashboard using the
+# Neon connection details. Use Neon's DIRECT connection string (the host
+# without "-pooler"), because asyncpg does not work with PgBouncer's
+# transaction mode unless prepared statements are disabled.
+#
+# Sync URL  (Alembic / psycopg):
+#   postgresql://USER:PASSWORD@ep-xxx.REGION.aws.neon.tech/DBNAME?sslmode=require
+# Async URL (FastAPI / asyncpg):
+#   postgresql+asyncpg://USER:PASSWORD@ep-xxx.REGION.aws.neon.tech/DBNAME?ssl=require
 
 services:
   - type: web
@@ -26,9 +32,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL_SYNC
-        fromDatabase:
-          name: sabicheck-db
-          property: connectionString
+        sync: false
       - key: DATABASE_URL_ASYNC
         sync: false
       - key: BACKEND_CORS_ORIGINS
@@ -39,9 +43,3 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
-
-databases:
-  - name: sabicheck-db
-    plan: free
-    databaseName: sabicheck
-    user: sabicheck
