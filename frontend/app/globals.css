@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme inline {
+  --font-sans: var(--font-inter);
+  --font-display: var(--font-jakarta);
+}
+
+@theme {
+  --color-canvas: #f7f9f8;
+  --color-surface: #ffffff;
+  --color-line: #e3e9e5;
+  --color-line-strong: #d3ddd6;
+  --color-brand: #007f45;
+  --color-brand-hover: #006a39;
+  --color-brand-ink: #023b1c;
+  --color-brand-soft: #e8f5ee;
+  --color-brand-tint: #dcfce7;
+  --color-ink: #1d2939;
+  --color-label: #344054;
+  --color-muted: #667085;
+  --color-subtle: #98a2b3;
+  --color-error: #b42318;
+  --color-error-soft: #fef3f2;
+
+  /* Dashboard portal palette (from the dashboard designs). */
+  --color-dash-canvas: #f6f8f8;
+  --color-dash-line: #dce5e5;
+  --color-dash-muted: #627579;
+  --color-dash-soft: #eef3f2;
+  --color-dash-tint: #ddf4ea;
+  --color-dash-teal: #14745c;
+  --color-warn-soft: #fff4df;
+  --color-warn-ink: #925e19;
+
+  --shadow-card:
+    0 1px 2px rgb(16 24 40 / 0.03), 0 18px 40px -24px rgb(16 24 40 / 0.16);
+}
+
+@layer base {
+  *,
+  ::after,
+  ::before {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+
+  ::selection {
+    background: #c7e9d6;
+    color: var(--color-brand-ink);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
