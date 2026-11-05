@@ -41,6 +41,16 @@ export type VerificationCodeUpdatePayload = {
   distributor_id?: string | null;
 };
 
+export type VerificationCodeBulkAssignPayload = {
+  code_ids: string[];
+  distributor_id: string | null;
+};
+
+export type VerificationCodeBulkAssignResponse = {
+  updated: number;
+  items: VerificationCode[];
+};
+
 export type VerificationCodeStatusCounts = {
   total: number;
   unused: number;
@@ -162,6 +172,16 @@ export const verificationCodeApi = {
     apiFetch<VerificationCodeOrderCreateResponse>(
       `/organizations/${organizationId}/products/${productId}/code-orders`,
       { method: "POST", body: payload },
+    ),
+
+  bulkAssign: (
+    organizationId: string,
+    productId: string,
+    payload: VerificationCodeBulkAssignPayload,
+  ) =>
+    apiFetch<VerificationCodeBulkAssignResponse>(
+      `/organizations/${organizationId}/products/${productId}/verification-codes`,
+      { method: "PATCH", body: payload },
     ),
 
   update: (

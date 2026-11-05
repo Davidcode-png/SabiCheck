@@ -15,6 +15,8 @@ from src.domain.models.verification_code import (
     VerificationCodeStatus,
 )
 from src.domain.schemas.verification_code import (
+    VerificationCodeBulkAssign,
+    VerificationCodeBulkAssignResponse,
     VerificationCodeDistributor,
     VerificationCodeList,
     VerificationCodeOrderCreate,
@@ -343,6 +345,46 @@ async def export_verification_codes(
         headers={
             "Content-Disposition": f'attachment; filename="{filename}"',
         },
+    )
+
+
+@router.patch(
+    "/verification-codes",
+    response_model=VerificationCodeBulkAssignResponse,
+)
+async def bulk_assign_verification_codes(
+    organization_id: uuid.UUID,
+    product_id: uuid.UUID,
+    payload: VerificationCodeBulkAssign,
+    current_user: CurrentUser,
+    session: DBSession,
+) -> VerificationCodeBulkAssignResponse:
+    """Assign many codes to one distributor, or clear their distributor."""
+    await _organization_with_access(
+        session, organization_id, current_user.id, roles=_MANAGER_ROLES
+    )
+    await _get_product(session, organization_id, product_id)
+
+    try:
+        codes = await verification_code_service.bulk_assign_distributor(
+            session,
+            organization_id,
+            product_id,
+            payload.code_ids,
+            payload.distributor_id,
+        )
+    except verification_code_service.VerificationCodeNotFoundError:
+        raise _not_found(
+            "One or more verification codes were not found"
+        ) from None
+    except verification_code_service.VerificationCodeDistributorNotFoundError:
+        raise _not_found(
+            "Distributor not found in this organization"
+        ) from None
+
+    return VerificationCodeBulkAssignResponse(
+        updated=len(codes),
+        items=[_code_to_read(code) for code in codes],
     )
 
 

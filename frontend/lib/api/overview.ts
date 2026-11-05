@@ -6,6 +6,20 @@ export type VerificationTrendPoint = {
   count: number;
 };
 
+export type MostReportedProduct = {
+  id: string;
+  name: string;
+  detail: string;
+  reports: number;
+};
+
+export type MostReportedDistributor = {
+  id: string;
+  name: string;
+  detail: string;
+  reports: number;
+};
+
 export type OrganizationOverview = {
   total_products: number;
   active_batches: number;
@@ -14,6 +28,8 @@ export type OrganizationOverview = {
   matched_records: number;
   consumer_reports: number;
   verification_trend: VerificationTrendPoint[];
+  most_reported_products: MostReportedProduct[];
+  most_reported_distributors: MostReportedDistributor[];
 };
 
 export const overviewApi = {

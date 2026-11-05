@@ -9,17 +9,12 @@ import { DashboardWorkspaceGate } from "@/components/dashboard/dashboard-workspa
 import { MobileDashboardHeader } from "@/components/dashboard/mobile-dashboard-header";
 import { OnboardingNotice } from "@/components/dashboard/onboarding-notice";
 import { OverviewNotice } from "@/components/dashboard/overview-notice";
+import { OverviewReportingCards } from "@/components/dashboard/overview-reporting-cards";
 import { OverviewStatsProvider } from "@/components/dashboard/overview-stats-provider";
 import { RecentAlerts } from "@/components/dashboard/recent-alerts";
-import { ReportingCard } from "@/components/dashboard/reporting-card";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { TrendCard } from "@/components/dashboard/trend-card";
 import { OrganizationProvider } from "@/components/organizations/organization-provider";
-import {
-  REPORTING_PERIOD,
-  TOP_DISTRIBUTORS,
-  TOP_PRODUCTS,
-} from "@/lib/dashboard";
 
 export const metadata: Metadata = {
   title: "Overview",
@@ -52,31 +47,7 @@ export default function DashboardPage() {
                   <OverviewNotice />
                   <TrendCard />
 
-                  <div className="mt-6 grid gap-6 xl:grid-cols-2">
-                    <ReportingCard
-                      id="products"
-                      title="Most-reported products"
-                      subtitle={`Consumer reports · ${REPORTING_PERIOD.periodLong}`}
-                      columnLabel="Product / pack size"
-                      items={TOP_PRODUCTS}
-                      icon="product"
-                      footnote="Reports are consumer submissions, not confirmed product issues."
-                      actionLabel="View product reports"
-                      actionHref="#recent-alerts"
-                    />
-
-                    <ReportingCard
-                      id="distribution"
-                      title="Most-reported distributors"
-                      subtitle={`Consumer reports · ${REPORTING_PERIOD.periodLong}`}
-                      columnLabel="Distributor / location"
-                      items={TOP_DISTRIBUTORS}
-                      icon="distributor"
-                      footnote="Reported distribution context does not establish distributor responsibility."
-                      actionLabel="View distributor reports"
-                      actionHref="#recent-alerts"
-                    />
-                  </div>
+                  <OverviewReportingCards />
 
                   <RecentAlerts />
 

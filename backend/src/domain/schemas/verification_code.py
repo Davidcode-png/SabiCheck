@@ -68,6 +68,18 @@ class VerificationCodeUpdate(BaseModel):
     distributor_id: uuid.UUID | None = None
 
 
+class VerificationCodeBulkAssign(BaseModel):
+    """Assign several codes to one distributor in a single request."""
+
+    code_ids: list[uuid.UUID] = Field(min_length=1, max_length=500)
+    distributor_id: uuid.UUID | None = None
+
+
+class VerificationCodeBulkAssignResponse(BaseModel):
+    updated: int
+    items: list[VerificationCodeRead]
+
+
 class VerificationCodeStatusCounts(BaseModel):
     total: int = 0
     unused: int = 0

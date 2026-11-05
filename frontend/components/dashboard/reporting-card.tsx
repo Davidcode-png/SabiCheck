@@ -14,6 +14,7 @@ type ReportingCardProps = {
   footnote: string;
   actionLabel: string;
   actionHref: string;
+  emptyMessage?: string;
   className?: string;
 };
 
@@ -32,6 +33,7 @@ export function ReportingCard({
   footnote,
   actionLabel,
   actionHref,
+  emptyMessage = "No consumer reports yet.",
   className,
 }: ReportingCardProps) {
   const Icon = ICONS[icon];
@@ -79,8 +81,18 @@ export function ReportingCard({
           </tr>
         </thead>
         <tbody>
+          {items.length === 0 ? (
+            <tr className="border-t border-dash-line">
+              <td
+                colSpan={2}
+                className="px-5 py-6 text-center text-[13px] leading-[18px] text-dash-muted xl:px-6"
+              >
+                {emptyMessage}
+              </td>
+            </tr>
+          ) : null}
           {items.map((item) => (
-            <tr key={item.name} className="border-t border-dash-line">
+            <tr key={item.id} className="border-t border-dash-line">
               <td className="px-5 py-3 align-middle xl:px-6 xl:py-3.5">
                 <div className="flex items-center gap-3">
                   <span

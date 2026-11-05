@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 
 from pydantic import BaseModel, ConfigDict
@@ -8,6 +9,24 @@ class VerificationTrendPoint(BaseModel):
 
     date: date
     count: int
+
+
+class MostReportedProduct(BaseModel):
+    """A product ranked by the number of consumer reports on its codes."""
+
+    id: uuid.UUID
+    name: str
+    detail: str
+    reports: int
+
+
+class MostReportedDistributor(BaseModel):
+    """A distributor ranked by reports on codes linked to it."""
+
+    id: uuid.UUID
+    name: str
+    detail: str
+    reports: int
 
 
 class OrganizationOverviewRead(BaseModel):
@@ -22,3 +41,5 @@ class OrganizationOverviewRead(BaseModel):
     matched_records: int
     consumer_reports: int
     verification_trend: list[VerificationTrendPoint]
+    most_reported_products: list[MostReportedProduct]
+    most_reported_distributors: list[MostReportedDistributor]

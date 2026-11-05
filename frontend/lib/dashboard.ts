@@ -123,22 +123,11 @@ export function formatOverviewCount(value: number | null | undefined) {
 }
 
 export type ReportingItem = {
+  id: string;
   name: string;
   detail: string;
   reports: number;
 };
-
-export const TOP_PRODUCTS: ReadonlyArray<ReportingItem> = [
-  { name: "Abeni Golden Oats", detail: "500 g · ABN-GO500", reports: 31 },
-  { name: "Abeni Tomato Stew Mix", detail: "70 g · ABN-TS070", reports: 18 },
-  { name: "Abeni Sunrise Custard", detail: "500 g · ABN-SC500", reports: 9 },
-];
-
-export const TOP_DISTRIBUTORS: ReadonlyArray<ReportingItem> = [
-  { name: "Idera Trade Depot", detail: "Ibadan, Oyo · DST-014", reports: 24 },
-  { name: "Moroa Supply Co.", detail: "Ikeja, Lagos · DST-008", reports: 16 },
-  { name: "Ketuwa Distribution", detail: "Ilorin, Kwara · DST-021", reports: 9 },
-];
 
 export type AlertStatus = "needs-review" | "in-review" | "reviewed";
 

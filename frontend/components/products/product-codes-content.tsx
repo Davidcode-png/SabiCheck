@@ -12,7 +12,7 @@ import {
   Ticket,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { PurchaseCodesDialog } from "@/components/products/purchase-codes-dialog";
 import { VerificationCodeStatusBadge } from "@/components/products/verification-code-status-badge";
@@ -34,6 +34,8 @@ import { formatRequestedCodes, type RegistryProduct } from "@/lib/product-regist
 import { cn } from "@/lib/cn";
 
 const PAGE_SIZE = 50;
+
+const BULK_UNASSIGNED = "__unassigned__";
 
 type LoadStatus = "loading" | "ready" | "error";
 
@@ -138,6 +140,38 @@ function StatusSelect({
   );
 }
 
+function SelectAllCheckbox({
+  checked,
+  indeterminate,
+  disabled,
+  onChange,
+}: {
+  checked: boolean;
+  indeterminate: boolean;
+  disabled: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  const ref = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.indeterminate = indeterminate;
+    }
+  }, [indeterminate]);
+
+  return (
+    <input
+      ref={ref}
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      onChange={(event) => onChange(event.target.checked)}
+      aria-label="Select all codes on this page"
+      className="h-4 w-4 cursor-pointer rounded border-line accent-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-40"
+    />
+  );
+}
+
 export function ProductCodesContent({
   product,
   organizationId,
@@ -164,6 +198,10 @@ export function ProductCodesContent({
   const [exporting, setExporting] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [distributors, setDistributors] = useState<Distributor[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDistributorId, setBulkDistributorId] = useState("");
+  const [bulkAssigning, setBulkAssigning] = useState(false);
+  const [bulkNotice, setBulkNotice] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -223,16 +261,29 @@ export function ProductCodesContent({
     };
   }, [organizationId, product.id, filter, search, page, reloadKey]);
 
+  function clearSelection() {
+    setSelectedIds(new Set());
+    setBulkDistributorId("");
+    setBulkNotice(null);
+  }
+
   function handleFilterChange(next: VerificationCodeStatusFilter) {
     setFilter(next);
     setPage(1);
     setUpdateError(null);
+    clearSelection();
   }
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSearch(searchInput.trim());
     setPage(1);
+    clearSelection();
+  }
+
+  function changePage(nextPage: number) {
+    setPage(nextPage);
+    clearSelection();
   }
 
   async function handleStatusChange(
@@ -313,6 +364,99 @@ export function ProductCodesContent({
     }
   }
 
+  function toggleCodeSelection(codeId: string, checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+
+      if (checked) {
+        next.add(codeId);
+      } else {
+        next.delete(codeId);
+      }
+
+      return next;
+    });
+    setBulkNotice(null);
+  }
+
+  function toggleAllCodes(checked: boolean) {
+    setSelectedIds(
+      checked && data
+        ? new Set(data.items.map((code) => code.id))
+        : new Set(),
+    );
+    setBulkNotice(null);
+  }
+
+  async function handleBulkAssign() {
+    const codeIds = data
+      ? data.items
+          .filter((code) => selectedIds.has(code.id))
+          .map((code) => code.id)
+      : [];
+
+    if (!bulkDistributorId || codeIds.length === 0 || bulkAssigning) {
+      return;
+    }
+
+    const distributorId =
+      bulkDistributorId === BULK_UNASSIGNED ? null : bulkDistributorId;
+
+    setBulkAssigning(true);
+    setUpdateError(null);
+    setBulkNotice(null);
+
+    try {
+      const result = await verificationCodeApi.bulkAssign(
+        organizationId,
+        product.id,
+        {
+          code_ids: codeIds,
+          distributor_id: distributorId,
+        },
+      );
+
+      const updatedById = new Map(
+        result.items.map((item) => [item.id, item]),
+      );
+
+      setData((current) =>
+        current
+          ? {
+              ...current,
+              items: current.items.map(
+                (item) => updatedById.get(item.id) ?? item,
+              ),
+            }
+          : current,
+      );
+
+      const distributorName = distributorId
+        ? distributors.find((item) => item.id === distributorId)?.name
+        : null;
+
+      setBulkNotice(
+        distributorId
+          ? `Assigned ${result.updated} ${
+              result.updated === 1 ? "code" : "codes"
+            } to ${distributorName ?? "the selected distributor"}.`
+          : `Removed the distributor from ${result.updated} ${
+              result.updated === 1 ? "code" : "codes"
+            }.`,
+      );
+      setSelectedIds(new Set());
+      setBulkDistributorId("");
+    } catch (cause) {
+      setUpdateError(
+        cause instanceof ApiError
+          ? cause.message
+          : "We could not assign these codes. Please try again.",
+      );
+    } finally {
+      setBulkAssigning(false);
+    }
+  }
+
   async function handleExport() {
     if (exporting) return;
 
@@ -359,6 +503,14 @@ export function ProductCodesContent({
   const currentPage = data?.page ?? page;
   const pages = data?.pages ?? 1;
   const hasCodes = counts.total > 0;
+  const pageCodes = data?.items ?? [];
+  const allSelected =
+    pageCodes.length > 0 &&
+    pageCodes.every((code) => selectedIds.has(code.id));
+  const someSelected = pageCodes.some((code) => selectedIds.has(code.id));
+  const selectedPageIds = pageCodes
+    .filter((code) => selectedIds.has(code.id))
+    .map((code) => code.id);
 
   return (
     <>
@@ -550,12 +702,78 @@ export function ProductCodesContent({
             </form>
           </div>
 
+          {canManage && selectedPageIds.length > 0 ? (
+            <div className="mt-4 flex flex-col gap-3 rounded-xl border border-brand/25 bg-brand/5 px-3.5 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-semibold leading-5 text-brand-ink">
+                {selectedPageIds.length}{" "}
+                {selectedPageIds.length === 1 ? "code" : "codes"} selected
+              </p>
+
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                <label htmlFor="bulk-distributor" className="sr-only">
+                  Distributor for selected codes
+                </label>
+                <select
+                  id="bulk-distributor"
+                  value={bulkDistributorId}
+                  disabled={bulkAssigning}
+                  onChange={(event) => {
+                    setBulkDistributorId(event.target.value);
+                    setBulkNotice(null);
+                  }}
+                  className="h-9 rounded-lg border border-line bg-white px-2.5 text-xs font-semibold text-brand-ink outline-none transition-colors hover:border-line-strong focus:border-brand focus:ring-4 focus:ring-brand/10 disabled:cursor-wait disabled:opacity-60"
+                >
+                  <option value="">Select distributor</option>
+                  {distributors.map((distributor) => (
+                    <option key={distributor.id} value={distributor.id}>
+                      {distributor.name}
+                    </option>
+                  ))}
+                  <option value={BULK_UNASSIGNED}>Unassigned</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleBulkAssign}
+                  disabled={!bulkDistributorId || bulkAssigning}
+                  className="inline-flex h-9 items-center justify-center rounded-lg bg-brand-ink px-3 text-xs font-semibold text-white transition-colors hover:bg-[#032f17] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/25 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {bulkAssigning
+                    ? bulkDistributorId === BULK_UNASSIGNED
+                      ? "Removing…"
+                      : "Assigning…"
+                    : bulkDistributorId === BULK_UNASSIGNED
+                      ? "Unassign"
+                      : "Assign"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={clearSelection}
+                  disabled={bulkAssigning}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-line bg-white px-3 text-xs font-semibold text-dash-muted transition-colors hover:border-line-strong hover:text-brand-ink focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          ) : null}
+
           {updateError ? (
             <div
               role="alert"
               className="mt-4 rounded-xl border border-error/20 bg-error-soft px-3.5 py-3 text-sm leading-5 text-error"
             >
               {updateError}
+            </div>
+          ) : null}
+
+          {bulkNotice ? (
+            <div
+              role="status"
+              className="mt-4 rounded-xl border border-brand/20 bg-brand/5 px-3.5 py-3 text-sm leading-5 text-brand-ink"
+            >
+              {bulkNotice}
             </div>
           ) : null}
         </div>
@@ -601,7 +819,7 @@ export function ProductCodesContent({
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[960px] border-collapse text-left">
+              <table className="w-full min-w-[1000px] border-collapse text-left">
                 <caption className="sr-only">
                   Verification codes for {product.name}
                 </caption>
@@ -609,7 +827,22 @@ export function ProductCodesContent({
                   <tr className="border-b border-dash-line">
                     <th
                       scope="col"
-                      className="px-5 pb-3 pt-4 text-left text-xs font-semibold uppercase tracking-[0.06em] text-dash-muted sm:px-6"
+                      className="w-10 pb-3 pl-5 pr-0 pt-4 text-left sm:pl-6"
+                    >
+                      {canManage ? (
+                        <SelectAllCheckbox
+                          checked={allSelected}
+                          indeterminate={someSelected && !allSelected}
+                          disabled={bulkAssigning || pageCodes.length === 0}
+                          onChange={toggleAllCodes}
+                        />
+                      ) : (
+                        <span className="sr-only">Select</span>
+                      )}
+                    </th>
+                    <th
+                      scope="col"
+                      className="px-3 pb-3 pt-4 text-left text-xs font-semibold uppercase tracking-[0.06em] text-dash-muted"
                     >
                       Code
                     </th>
@@ -651,7 +884,24 @@ export function ProductCodesContent({
                       key={code.id}
                       className="border-b border-dash-line last:border-b-0"
                     >
-                      <td className="px-5 py-4 align-middle sm:px-6">
+                      <td className="w-10 py-4 pl-5 pr-0 align-middle sm:pl-6">
+                        {canManage ? (
+                          <input
+                            type="checkbox"
+                            checked={selectedIds.has(code.id)}
+                            disabled={bulkAssigning}
+                            onChange={(event) =>
+                              toggleCodeSelection(
+                                code.id,
+                                event.target.checked,
+                              )
+                            }
+                            aria-label={`Select ${code.code}`}
+                            className="h-4 w-4 cursor-pointer rounded border-line accent-brand focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-40"
+                          />
+                        ) : null}
+                      </td>
+                      <td className="px-3 py-4 align-middle">
                         <span className="font-mono text-sm font-semibold tracking-[0.04em] text-brand-ink">
                           {code.code}
                         </span>
@@ -668,7 +918,7 @@ export function ProductCodesContent({
                             <DistributorSelect
                               code={code}
                               distributors={distributors}
-                              disabled={updatingId === code.id}
+                              disabled={updatingId === code.id || bulkAssigning}
                               onChange={(nextDistributorId) =>
                                 handleDistributorChange(
                                   code,
@@ -713,7 +963,7 @@ export function ProductCodesContent({
                         {canManage ? (
                           <StatusSelect
                             code={code}
-                            disabled={updatingId === code.id}
+                            disabled={updatingId === code.id || bulkAssigning}
                             onChange={(nextStatus) =>
                               handleStatusChange(code, nextStatus)
                             }
@@ -742,7 +992,7 @@ export function ProductCodesContent({
                 <button
                   type="button"
                   onClick={() =>
-                    setPage((current) => Math.max(1, current - 1))
+                    changePage(Math.max(1, currentPage - 1))
                   }
                   disabled={currentPage <= 1}
                   className="inline-flex h-9 items-center gap-1 rounded-lg border border-line bg-white px-3 text-xs font-semibold text-brand-ink transition-colors hover:bg-canvas focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-40"
@@ -755,7 +1005,7 @@ export function ProductCodesContent({
                 </span>
                 <button
                   type="button"
-                  onClick={() => setPage((current) => current + 1)}
+                  onClick={() => changePage(currentPage + 1)}
                   disabled={currentPage >= pages}
                   className="inline-flex h-9 items-center gap-1 rounded-lg border border-line bg-white px-3 text-xs font-semibold text-brand-ink transition-colors hover:bg-canvas focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15 disabled:cursor-not-allowed disabled:opacity-40"
                 >

@@ -238,6 +238,7 @@ async def create_report(
         verification_code_id=record.id if record else None,
         product_id=product.id if product else None,
         organization_id=organization.id if organization else None,
+        distributor_id=record.distributor_id if record else None,
         product_name=product_name,
         concern=data.concern,
         description=(data.description or "").strip() or None,

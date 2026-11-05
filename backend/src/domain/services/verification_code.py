@@ -339,5 +339,50 @@ async def update_code(
     return result.scalar_one()
 
 
+async def bulk_assign_distributor(
+    session: AsyncSession,
+    organization_id: uuid.UUID,
+    product_id: uuid.UUID,
+    code_ids: list[uuid.UUID],
+    distributor_id: uuid.UUID | None,
+) -> list[VerificationCode]:
+    """Assign many codes to one distributor, or clear their distributor.
+
+    Every selected code must belong to the product and organization; a partial
+    match is rejected so the caller never believes more codes were updated than
+    actually were.
+    """
+    if distributor_id is not None:
+        await _validate_distributor(session, organization_id, distributor_id)
+
+    unique_ids = list(dict.fromkeys(code_ids))
+
+    result = await session.execute(
+        select(VerificationCode).where(
+            VerificationCode.id.in_(unique_ids),
+            VerificationCode.product_id == product_id,
+            VerificationCode.organization_id == organization_id,
+        )
+    )
+    codes = list(result.scalars().unique().all())
+
+    if len(codes) != len(unique_ids):
+        raise VerificationCodeNotFoundError
+
+    for code in codes:
+        code.distributor_id = distributor_id
+
+    await session.flush()
+
+    # Re-query so the joined distributor relationship reflects the new
+    # assignment instead of the value cached on each instance.
+    refreshed = await session.execute(
+        select(VerificationCode)
+        .where(VerificationCode.id.in_(unique_ids))
+        .execution_options(populate_existing=True)
+    )
+    return list(refreshed.scalars().unique().all())
+
+
 def page_count(total: int, page_size: int) -> int:
     return max(1, math.ceil(total / page_size))
