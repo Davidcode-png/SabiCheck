@@ -42,11 +42,30 @@ class Settings(BaseSettings):
     CLOUDINARY_UPLOAD_FOLDER: str = "sabicheck/organizations"
     # Gemini API
     GEMINI_API_KEY: str = ""
-    GEMINI_MODEL: str = "gemini-3.5-flash"
+    GEMINI_MODEL: str = "gemini-3.8-flash"
+    # Comma-separated fallbacks tried in order when the primary model is
+    # overloaded (429/503), times out, or is unavailable.
+    GEMINI_FALLBACK_MODELS: str = "gemini-3.5-flash,gemini-3.1-flash"
+    # Skip a model that just failed capacity for this many seconds.
+    # Set to 0 to disable the cooldown.
+    GEMINI_MODEL_COOLDOWN_SECONDS: float = 60.0
     GEMINI_EMBED_MODEL: str = "gemini-embedding-001"
     EMBED_DIMS: int = 768
     SUMMARY_MAX_CHARS: int = 60000
     ASK_TOP_K: int = 8
+    # Consumer report triage
+    GEMINI_TRIAGE_ENABLED: bool = True
+    GEMINI_TRIAGE_TIMEOUT_SECONDS: float = 20.0
+    GEMINI_TRIAGE_MAX_DESCRIPTION_CHARS: int = 4000
+    GEMINI_TRIAGE_MAX_CANDIDATES: int = 5
+    GEMINI_TRIAGE_PROMPT_VERSION: str = "report-triage-v1"
+    # 0 disables thinking (faster and cheaper); -1 lets the model decide.
+    GEMINI_TRIAGE_THINKING_BUDGET: int = 0
+    # Workspace assistant
+    GEMINI_ASSISTANT_ENABLED: bool = True
+    GEMINI_ASSISTANT_TIMEOUT_SECONDS: float = 25.0
+    GEMINI_ASSISTANT_HISTORY_TURNS: int = 6
+    GEMINI_ASSISTANT_THINKING_BUDGET: int = 0
     # NAFDAC Greenbook snapshot
     GREENBOOK_BASE_URL: str = "https://greenbook.nafdac.gov.ng/"
     GREENBOOK_REQUEST_TIMEOUT_SECONDS: float = 30.0
@@ -65,3 +84,16 @@ class Settings(BaseSettings):
             for origin in self.BACKEND_CORS_ORIGINS.split(",")
             if origin.strip()
         ]
+
+    @property
+    def gemini_models(self) -> list[str]:
+        """Return the primary model followed by its unique fallbacks."""
+        ordered = [self.GEMINI_MODEL, *self.GEMINI_FALLBACK_MODELS.split(",")]
+        models: list[str] = []
+
+        for value in ordered:
+            model = value.strip()
+            if model and model not in models:
+                models.append(model)
+
+        return models

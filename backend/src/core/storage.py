@@ -67,6 +67,7 @@ def _upload(content: bytes, filename: str, extension: str, folder: str) -> dict:
             format=extension,
         )
     except Exception as exc:
+        print("THIS IS THE ERROR", exc)
         raise StorageUploadError(str(exc)) from exc
 
 

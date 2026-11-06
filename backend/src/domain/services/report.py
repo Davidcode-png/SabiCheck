@@ -11,6 +11,7 @@ from src.domain.models.organization import OrganizationUser
 from src.domain.models.verification_code import (
     CodeReport,
     ConcernType,
+    ReportPriority,
 )
 from src.domain.schemas.report import ConsumerReportUpdate, ReportStatus
 
@@ -52,6 +53,7 @@ def _filters(
     search: str | None = None,
     concern: ConcernType | None = None,
     report_status: ReportStatus | None = None,
+    priority: ReportPriority | None = None,
     location: str | None = None,
 ) -> list:
     filters = [CodeReport.organization_id == organization_id]
@@ -73,6 +75,9 @@ def _filters(
 
     if report_status is not None:
         filters.append(CodeReport.status == report_status.value)
+
+    if priority is not None:
+        filters.append(CodeReport.priority == priority.value)
 
     if location and location.strip():
         term = f"%{location.strip()}%"
@@ -128,6 +133,7 @@ async def list_reports(
     search: str | None = None,
     concern: ConcernType | None = None,
     report_status: ReportStatus | None = None,
+    priority: ReportPriority | None = None,
     location: str | None = None,
     page: int = 1,
     page_size: int = 10,
@@ -137,6 +143,7 @@ async def list_reports(
         search=search,
         concern=concern,
         report_status=report_status,
+        priority=priority,
         location=location,
     )
 
@@ -172,6 +179,7 @@ async def list_reports_for_export(
     search: str | None = None,
     concern: ConcernType | None = None,
     report_status: ReportStatus | None = None,
+    priority: ReportPriority | None = None,
     location: str | None = None,
 ) -> list[CodeReport]:
     filters = _filters(
@@ -179,6 +187,7 @@ async def list_reports_for_export(
         search=search,
         concern=concern,
         report_status=report_status,
+        priority=priority,
         location=location,
     )
 
@@ -266,6 +275,9 @@ async def update_report(
 
     if "distributor_id" in changes:
         report.distributor_id = changes["distributor_id"]
+
+    if changes.get("priority") is not None:
+        report.priority = changes["priority"].value
 
     await session.flush()
 

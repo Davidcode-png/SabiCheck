@@ -7,7 +7,7 @@ from fastapi import status as http_status
 
 from src.core.db.dependencies import CurrentUser, DBSession
 from src.domain.models.organization import OrganizationRole
-from src.domain.models.verification_code import ConcernType
+from src.domain.models.verification_code import ConcernType, ReportPriority
 from src.domain.schemas.report import (
     ConsumerReportList,
     ConsumerReportRead,
@@ -16,6 +16,7 @@ from src.domain.schemas.report import (
 )
 from src.domain.services import organization as organization_service
 from src.domain.services import report as report_service
+from src.domain.services import triage as triage_service
 
 router = APIRouter(
     prefix="/organizations/{organization_id}/reports",
@@ -28,6 +29,12 @@ _STATUS_LABELS = {
     ReportStatus.RECEIVED: "Received",
     ReportStatus.UNDER_REVIEW: "Under review",
     ReportStatus.REFERRED: "Referred",
+}
+
+_PRIORITY_LABELS = {
+    ReportPriority.LOW: "Low",
+    ReportPriority.NORMAL: "Normal",
+    ReportPriority.URGENT: "Urgent",
 }
 
 
@@ -69,6 +76,7 @@ async def list_reports(
     search: str | None = Query(default=None, max_length=120),
     issue_type: ConcernType | None = Query(default=None),
     report_status: ReportStatus | None = Query(default=None, alias="status"),
+    priority: ReportPriority | None = Query(default=None),
     location: str | None = Query(default=None, max_length=120),
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=10, ge=1, le=100),
@@ -83,6 +91,7 @@ async def list_reports(
         search=search,
         concern=issue_type,
         report_status=report_status,
+        priority=priority,
         location=location,
         page=page,
         page_size=page_size,
@@ -106,6 +115,7 @@ async def export_reports(
     search: str | None = Query(default=None, max_length=120),
     issue_type: ConcernType | None = Query(default=None),
     report_status: ReportStatus | None = Query(default=None, alias="status"),
+    priority: ReportPriority | None = Query(default=None),
     location: str | None = Query(default=None, max_length=120),
 ) -> Response:
     """Download every report matching the current register filters."""
@@ -119,6 +129,7 @@ async def export_reports(
         search=search,
         concern=issue_type,
         report_status=report_status,
+        priority=priority,
         location=location,
     )
 
@@ -130,6 +141,7 @@ async def export_reports(
             "Product name",
             "Product code",
             "Case/issue",
+            "Priority",
             "Reviewer",
             "Distributor",
             "Location",
@@ -163,12 +175,18 @@ async def export_reports(
         except ValueError:
             status_value = ReportStatus.RECEIVED
 
+        try:
+            priority_value = ReportPriority(report.priority)
+        except ValueError:
+            priority_value = ReportPriority.NORMAL
+
         writer.writerow(
             [
                 report.reference,
                 report.product_name or "",
                 report.code,
                 report.concern.value,
+                _PRIORITY_LABELS[priority_value],
                 reviewer,
                 distributor,
                 location_value,
@@ -234,5 +252,52 @@ async def update_report(
         raise _not_found("Reviewer not found in this organization") from None
     except report_service.ReportDistributorNotFoundError:
         raise _not_found("Distributor not found in this organization") from None
+
+    return ConsumerReportRead.model_validate(report)
+
+
+@router.post("/{report_id}/triage", response_model=ConsumerReportRead)
+async def triage_report(
+    organization_id: uuid.UUID,
+    report_id: uuid.UUID,
+    current_user: CurrentUser,
+    session: DBSession,
+) -> ConsumerReportRead:
+    """Generate an AI triage suggestion for one consumer report.
+
+    The suggestion is stored alongside the report. It never changes the
+    report's status, priority, reviewer, or distributor.
+    """
+    await _require_organization_access(
+        session, organization_id, current_user.id, roles=_MANAGER_ROLES
+    )
+
+    try:
+        report = await triage_service.triage_report(
+            session, organization_id, report_id
+        )
+    except report_service.ReportNotFoundError:
+        raise _not_found() from None
+    except triage_service.TriageNotConfiguredError:
+        raise HTTPException(
+            status_code=http_status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=(
+                "AI triage is not configured. Add GEMINI_API_KEY to the "
+                "backend environment."
+            ),
+        ) from None
+    except triage_service.TriageUnavailableError:
+        raise HTTPException(
+            status_code=http_status.HTTP_502_BAD_GATEWAY,
+            detail=(
+                "AI triage is temporarily unavailable. Please review this "
+                "case manually."
+            ),
+        ) from None
+    except triage_service.TriageInvalidResponseError:
+        raise HTTPException(
+            status_code=http_status.HTTP_502_BAD_GATEWAY,
+            detail="AI triage returned an unusable response. Please try again.",
+        ) from None
 
     return ConsumerReportRead.model_validate(report)
