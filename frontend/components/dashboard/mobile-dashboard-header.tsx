@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, type MouseEvent } from "react";
 import { useSession } from "@/components/auth/session-provider";
 import { DashboardNav } from "@/components/dashboard/dashboard-nav";
 import { ReviewNote } from "@/components/dashboard/review-note";
+import { WorkspaceAssistant } from "@/components/dashboard/workspace-assistant";
 import { WorkspaceMenu } from "@/components/dashboard/workspace-menu";
 import { useOrganizations } from "@/components/organizations/organization-provider";
 import { SETTINGS_NAV_ITEM } from "@/lib/dashboard";
@@ -102,7 +103,13 @@ export function MobileDashboardHeader({
         <p className="shrink-0 whitespace-nowrap text-sm font-semibold text-brand-ink">
           {sectionLabel}
         </p>
-        <WorkspaceMenu variant="inline" />
+        <div className="flex min-w-0 items-center justify-end gap-1">
+          <WorkspaceAssistant
+            key={selectedOrganization?.id ?? "no-workspace"}
+            variant="mobile"
+          />
+          <WorkspaceMenu variant="inline" className="max-w-[190px]" />
+        </div>
       </div>
 
       <dialog

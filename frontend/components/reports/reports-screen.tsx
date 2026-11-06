@@ -9,21 +9,25 @@ import {
   Info,
   Search,
   SlidersHorizontal,
+  Sparkles,
   UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 
 import { useOrganizations } from "@/components/organizations/organization-provider";
 import { ReportDialog } from "@/components/reports/report-dialog";
+import { ReportPriorityBadge } from "@/components/reports/report-priority-badge";
 import { ReportStatusBadge } from "@/components/reports/report-status-badge";
 import { ApiError } from "@/lib/api/client";
 import {
   REPORT_ISSUE_OPTIONS,
+  REPORT_PRIORITY_OPTIONS,
   REPORT_STATUS_OPTIONS,
   reportApi,
   type ConsumerReport,
   type ConsumerReportList,
   type ReportIssueFilter,
+  type ReportPriorityFilter,
   type ReportStatus,
   type ReportStatusFilter,
 } from "@/lib/api/reports";
@@ -120,6 +124,8 @@ export function ReportsScreen() {
   const [search, setSearch] = useState("");
   const [issueFilter, setIssueFilter] = useState<ReportIssueFilter>("all");
   const [statusFilter, setStatusFilter] = useState<ReportStatusFilter>("all");
+  const [priorityFilter, setPriorityFilter] =
+    useState<ReportPriorityFilter>("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<number>(PAGE_SIZES[1]);
@@ -155,6 +161,7 @@ export function ReportsScreen() {
           search,
           issueType: issueFilter,
           status: statusFilter,
+          priority: priorityFilter,
           location: locationFilter === "all" ? "" : locationFilter,
           page,
           pageSize,
@@ -183,6 +190,7 @@ export function ReportsScreen() {
     search,
     issueFilter,
     statusFilter,
+    priorityFilter,
     locationFilter,
     page,
     pageSize,
@@ -215,6 +223,7 @@ export function ReportsScreen() {
     Boolean(search) ||
     issueFilter !== "all" ||
     statusFilter !== "all" ||
+    priorityFilter !== "all" ||
     locationFilter !== "all";
 
   const showingFrom = total === 0 ? 0 : (currentPage - 1) * pageSize + 1;
@@ -233,9 +242,14 @@ export function ReportsScreen() {
               (option) => option.value === statusFilter,
             )?.label
           : null,
+        priorityFilter !== "all"
+          ? REPORT_PRIORITY_OPTIONS.find(
+              (option) => option.value === priorityFilter,
+            )?.label
+          : null,
         locationFilter !== "all" ? locationFilter : null,
       ].filter(Boolean) as string[],
-    [search, issueFilter, statusFilter, locationFilter],
+    [search, issueFilter, statusFilter, priorityFilter, locationFilter],
   );
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
@@ -257,6 +271,12 @@ export function ReportsScreen() {
     setSelectedIds(new Set());
   }
 
+  function handlePriorityChange(value: ReportPriorityFilter) {
+    setPriorityFilter(value);
+    setPage(1);
+    setSelectedIds(new Set());
+  }
+
   function handleLocationChange(value: string) {
     setLocationFilter(value);
     setPage(1);
@@ -274,6 +294,7 @@ export function ReportsScreen() {
     setSearch("");
     setIssueFilter("all");
     setStatusFilter("all");
+    setPriorityFilter("all");
     setLocationFilter("all");
     setPage(1);
     setSelectedIds(new Set());
@@ -335,6 +356,7 @@ export function ReportsScreen() {
         search,
         issueType: issueFilter,
         status: statusFilter,
+        priority: priorityFilter,
         location: locationFilter === "all" ? "" : locationFilter,
       });
       const url = URL.createObjectURL(blob);
@@ -467,6 +489,28 @@ export function ReportsScreen() {
         </label>
 
         <label className="relative inline-flex w-full items-center sm:w-auto">
+          <span className="sr-only">Filter by priority</span>
+          <select
+            value={priorityFilter}
+            onChange={(event) =>
+              handlePriorityChange(event.target.value as ReportPriorityFilter)
+            }
+            className="h-11 w-full cursor-pointer appearance-none rounded-lg border border-dash-line bg-white pl-4 pr-10 text-sm font-medium text-brand-ink outline-none transition-colors hover:border-line-strong focus:border-brand focus:ring-4 focus:ring-brand/10 sm:w-[150px]"
+          >
+            <option value="all">All priorities</option>
+            {REPORT_PRIORITY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            aria-hidden="true"
+            className="pointer-events-none absolute right-3.5 h-4 w-4 text-brand-ink"
+          />
+        </label>
+
+        <label className="relative inline-flex w-full items-center sm:w-auto">
           <span className="sr-only">Filter by location</span>
           <select
             value={locationFilter}
@@ -552,7 +596,7 @@ export function ReportsScreen() {
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[960px] border-collapse text-left">
+              <table className="w-full min-w-[1040px] border-collapse text-left">
                 <caption className="sr-only">
                   Consumer reports for{" "}
                   {selectedOrganization?.name ?? "your organization"}
@@ -572,6 +616,7 @@ export function ReportsScreen() {
                       "Case code",
                       "Product name/code",
                       "Case/issue",
+                      "Priority",
                       "Reviewer",
                       "Distributor/location",
                       "Date reported",
@@ -623,8 +668,20 @@ export function ReportsScreen() {
                           />
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 align-middle">
-                          <p className="text-sm font-semibold leading-5 text-brand-ink">
+                          <p className="flex items-center gap-1.5 text-sm font-semibold leading-5 text-brand-ink">
                             {report.reference}
+                            {report.ai_triage ? (
+                              <>
+                                <Sparkles
+                                  aria-hidden="true"
+                                  className="h-3.5 w-3.5 text-dash-teal"
+                                  strokeWidth={1.8}
+                                />
+                                <span className="sr-only">
+                                  AI triage available
+                                </span>
+                              </>
+                            ) : null}
                           </p>
                         </td>
                         <td className="px-3 py-4 align-middle">
@@ -644,6 +701,9 @@ export function ReportsScreen() {
                           >
                             {report.concern}
                           </p>
+                        </td>
+                        <td className="whitespace-nowrap px-3 py-4 align-middle">
+                          <ReportPriorityBadge priority={report.priority} />
                         </td>
                         <td className="whitespace-nowrap px-3 py-4 align-middle text-sm text-brand-ink">
                           {reviewerName(report)}

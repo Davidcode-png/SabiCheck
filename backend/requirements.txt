@@ -26,3 +26,6 @@ pwdlib[argon2]==0.3.1
 # Storage and HTTP
 cloudinary==1.46.3
 httpx==0.28.1
+
+# AI (consumer report triage)
+google-genai==3.0.0

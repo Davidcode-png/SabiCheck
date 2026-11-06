@@ -3,6 +3,7 @@
 import { Bell } from "lucide-react";
 import Link from "next/link";
 
+import { WorkspaceAssistant } from "@/components/dashboard/workspace-assistant";
 import { useOrganizations } from "@/components/organizations/organization-provider";
 
 export type DashboardBreadcrumbItem = {
@@ -67,6 +68,9 @@ export function DashboardTopbar({
           <p className="max-w-[280px] truncate text-sm text-dash-muted">
             {selectedOrganization?.name}
           </p>
+          <WorkspaceAssistant
+            key={selectedOrganization?.id ?? "no-workspace"}
+          />
           <Link
             href="/dashboard#recent-alerts"
             aria-label="View recent alerts"

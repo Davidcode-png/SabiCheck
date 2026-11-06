@@ -5,6 +5,22 @@ import {
 } from "@/lib/api/public-code";
 
 export type ReportStatus = "received" | "under_review" | "referred";
+export type ReportPriority = "low" | "normal" | "urgent";
+export type TriageConfidence = "low" | "medium" | "high";
+
+export type ReportTriage = {
+  summary: string;
+  suggested_concern: ConcernValue | null;
+  priority: ReportPriority;
+  priority_reason: string | null;
+  duplicate_reference: string | null;
+  suggested_next_step: string | null;
+  flags: string[];
+  confidence: TriageConfidence;
+  model: string;
+  prompt_version: string | null;
+  generated_at: string;
+};
 
 export type ReportReviewer = {
   id: string;
@@ -32,9 +48,11 @@ export type ConsumerReport = {
   purchase_location: string | null;
   purchase_date: string | null;
   status: ReportStatus;
+  priority: ReportPriority;
   reviewer: ReportReviewer | null;
   distributor: ReportDistributor | null;
   reviewed_at: string | null;
+  ai_triage: ReportTriage | null;
   created_at: string;
   updated_at: string;
 };
@@ -50,11 +68,13 @@ export type ConsumerReportList = {
 
 export type ReportStatusFilter = "all" | ReportStatus;
 export type ReportIssueFilter = "all" | ConcernValue;
+export type ReportPriorityFilter = "all" | ReportPriority;
 
 export type ConsumerReportListParams = {
   search?: string;
   issueType?: ReportIssueFilter;
   status?: ReportStatusFilter;
+  priority?: ReportPriorityFilter;
   location?: string;
   page?: number;
   pageSize?: number;
@@ -62,6 +82,7 @@ export type ConsumerReportListParams = {
 
 export type ConsumerReportUpdatePayload = {
   status?: ReportStatus;
+  priority?: ReportPriority;
   reviewer_id?: string | null;
   distributor_id?: string | null;
 };
@@ -81,6 +102,21 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   referred: "Referred",
 };
 
+export const REPORT_PRIORITY_OPTIONS: ReadonlyArray<{
+  value: ReportPriority;
+  label: string;
+}> = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "urgent", label: "Urgent" },
+];
+
+export const REPORT_PRIORITY_LABELS: Record<ReportPriority, string> = {
+  low: "Low",
+  normal: "Normal",
+  urgent: "Urgent",
+};
+
 export const REPORT_ISSUE_OPTIONS: ReadonlyArray<{
   value: ConcernValue;
   label: string;
@@ -97,6 +133,9 @@ function buildQuery(params: ConsumerReportListParams) {
   }
   if (params.status && params.status !== "all") {
     query.set("status", params.status);
+  }
+  if (params.priority && params.priority !== "all") {
+    query.set("priority", params.priority);
   }
   if (params.location?.trim()) {
     query.set("location", params.location.trim());
@@ -131,6 +170,12 @@ export const reportApi = {
     apiFetch<ConsumerReport>(
       `/organizations/${organizationId}/reports/${reportId}`,
       { method: "PATCH", body: payload },
+    ),
+
+  triage: (organizationId: string, reportId: string) =>
+    apiFetch<ConsumerReport>(
+      `/organizations/${organizationId}/reports/${reportId}/triage`,
+      { method: "POST" },
     ),
 
   export: (
