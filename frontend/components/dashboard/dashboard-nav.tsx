@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bell,
   Box,
   Flag,
   LayoutGrid,
@@ -20,6 +21,7 @@ const NAV_ICONS: Record<DashboardNavIcon, LucideIcon> = {
   distribution: Truck,
   verifications: ScanLine,
   reports: Flag,
+  alerts: Bell,
   settings: LayoutGrid,
 };
 
@@ -59,6 +61,12 @@ function useActiveSection() {
     pathname.startsWith("/dashboard/reports/")
   ) {
     return "reports" as const;
+  }
+  if (
+    pathname === "/dashboard/alerts" ||
+    pathname.startsWith("/dashboard/alerts/")
+  ) {
+    return "alerts" as const;
   }
 
   return null;

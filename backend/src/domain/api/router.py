@@ -1,5 +1,6 @@
 from fastapi import APIRouter
 
+from src.domain.api.alert import router as alert_router
 from src.domain.api.auth import router as auth_router
 from src.domain.api.assistant import router as assistant_router
 from src.domain.api.distributor import router as distributor_router
@@ -13,6 +14,7 @@ from src.domain.api.verification import router as verification_router
 from src.domain.api.verification_code import router as verification_code_router
 
 api_router = APIRouter()
+api_router.include_router(alert_router)
 api_router.include_router(auth_router)
 api_router.include_router(assistant_router)
 api_router.include_router(distributor_router)

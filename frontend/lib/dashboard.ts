@@ -9,6 +9,7 @@ export type DashboardNavIcon =
   | "distribution"
   | "verifications"
   | "reports"
+  | "alerts"
   | "settings";
 
 export type DashboardNavItem = {
@@ -27,6 +28,7 @@ export const NAV_ITEMS: ReadonlyArray<DashboardNavItem> = [
     icon: "verifications",
   },
   { label: "Consumer reports", href: "/dashboard/reports", icon: "reports" },
+  { label: "Alerts", href: "/dashboard/alerts", icon: "alerts" },
 ];
 
 export const SETTINGS_NAV_ITEM: DashboardNavItem = {
@@ -95,7 +97,7 @@ export const DASHBOARD_STAT_DEFINITIONS: ReadonlyArray<DashboardStatDefinition> 
     {
       key: "repeat_code_alerts",
       label: "Repeat-code alerts",
-      description: "Not tracked yet",
+      description: "Codes checked more than once",
       icon: "repeat",
     },
     {
@@ -127,73 +129,6 @@ export type ReportingItem = {
   name: string;
   detail: string;
   reports: number;
-};
-
-export type AlertStatus = "needs-review" | "in-review" | "reviewed";
-
-export type DashboardAlert = {
-  type: string;
-  product: string;
-  pack: string;
-  code: string;
-  note: string;
-  distributor: string;
-  location: string;
-  recorded: string;
-  status: AlertStatus;
-};
-
-export const RECENT_ALERTS: ReadonlyArray<DashboardAlert> = [
-  {
-    type: "Repeat-code alert",
-    product: "Abeni Golden Oats",
-    pack: "500 g",
-    code: "ABN-GO26-08419",
-    note: "Multiple checks recorded for this unit code.",
-    distributor: "Idera Trade Depot",
-    location: "Ibadan, Oyo",
-    recorded: "16 Oct 2026 · 14:42 WAT",
-    status: "needs-review",
-  },
-  {
-    type: "Unmatched-code event",
-    product: "Abeni Tomato Stew Mix",
-    pack: "70 g",
-    code: "ABN-TS26-0093X",
-    note: "Submitted code did not match a unit record.",
-    distributor: "Moroa Supply Co.",
-    location: "Ikeja, Lagos",
-    recorded: "16 Oct 2026 · 13:08 WAT",
-    status: "needs-review",
-  },
-  {
-    type: "Consumer report",
-    product: "Abeni Sunrise Custard",
-    pack: "500 g",
-    code: "ABN-SC26-02168",
-    note: "Consumer reported an unclear code on packaging.",
-    distributor: "Ketuwa Distribution",
-    location: "Ilorin, Kwara",
-    recorded: "16 Oct 2026 · 11:25 WAT",
-    status: "in-review",
-  },
-  {
-    type: "Repeat-code alert",
-    product: "Abeni Golden Oats",
-    pack: "500 g",
-    code: "ABN-GO26-07302",
-    note: "Review note: follow up on repeated consumer checks.",
-    distributor: "Idera Trade Depot",
-    location: "Ibadan, Oyo",
-    recorded: "16 Oct 2026 · 09:17 WAT",
-    status: "reviewed",
-  },
-];
-
-export const ALERT_STATUS_LABELS: Record<AlertStatus, string> = {
-  "needs-review": "Needs review",
-  "in-review": "In review",
-  reviewed: "Reviewed",
 };
 
 const CSV_FILENAME = "sabicheck-overview-01-16-oct-2026.csv";

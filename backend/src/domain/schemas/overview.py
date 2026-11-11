@@ -39,6 +39,7 @@ class OrganizationOverviewRead(BaseModel):
     codes_purchased: int
     codes_applied: int
     matched_records: int
+    repeat_code_alerts: int
     consumer_reports: int
     verification_trend: list[VerificationTrendPoint]
     most_reported_products: list[MostReportedProduct]

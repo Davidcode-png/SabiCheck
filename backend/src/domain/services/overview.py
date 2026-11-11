@@ -18,6 +18,7 @@ from src.domain.schemas.overview import (
     OrganizationOverviewRead,
     VerificationTrendPoint,
 )
+from src.domain.services.alert import count_repeat_code_alerts
 
 # The overview chart shows a fortnight of daily check activity.
 TREND_DAYS = 16
@@ -221,6 +222,9 @@ async def get_overview(
         codes_purchased=purchased or 0,
         codes_applied=applied or 0,
         matched_records=matched or 0,
+        repeat_code_alerts=await count_repeat_code_alerts(
+            session, organization_id
+        ),
         consumer_reports=reported or 0,
         verification_trend=await _verification_trend(
             session, organization_id

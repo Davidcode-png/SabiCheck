@@ -26,6 +26,7 @@ export type OrganizationOverview = {
   codes_purchased: number;
   codes_applied: number;
   matched_records: number;
+  repeat_code_alerts: number;
   consumer_reports: number;
   verification_trend: VerificationTrendPoint[];
   most_reported_products: MostReportedProduct[];

@@ -72,8 +72,8 @@ export function DashboardTopbar({
             key={selectedOrganization?.id ?? "no-workspace"}
           />
           <Link
-            href="/dashboard#recent-alerts"
-            aria-label="View recent alerts"
+            href="/dashboard/alerts"
+            aria-label="View alerts"
             className="flex h-9 w-9 items-center justify-center rounded-full text-brand-ink transition-colors hover:bg-dash-soft focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-brand/15"
           >
             <Bell aria-hidden="true" className="h-5 w-5" strokeWidth={1.8} />

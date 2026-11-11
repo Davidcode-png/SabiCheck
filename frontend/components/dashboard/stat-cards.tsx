@@ -35,7 +35,7 @@ function statValue(
   stats: OrganizationOverview | null,
   key: OverviewStatKey,
 ): number | null {
-  if (!stats || key === "repeat_code_alerts") return null;
+  if (!stats) return null;
   return stats[key];
 }
 

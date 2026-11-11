@@ -1,4 +1,4 @@
-import { ALERT_STATUS_LABELS, type AlertStatus } from "@/lib/dashboard";
+import { ALERT_STATUS_LABELS, type AlertStatus } from "@/lib/api/alerts";
 import { cn } from "@/lib/cn";
 
 const STATUS_STYLES: Record<AlertStatus, string> = {
