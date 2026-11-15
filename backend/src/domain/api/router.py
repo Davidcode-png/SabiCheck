@@ -12,6 +12,7 @@ from src.domain.api.public_code import router as public_code_router
 from src.domain.api.report import router as report_router
 from src.domain.api.verification import router as verification_router
 from src.domain.api.verification_code import router as verification_code_router
+from src.domain.api.waitlist import router as waitlist_router
 
 api_router = APIRouter()
 api_router.include_router(alert_router)
@@ -26,3 +27,4 @@ api_router.include_router(report_router)
 api_router.include_router(verification_router)
 api_router.include_router(verification_code_router)
 api_router.include_router(public_code_router)
+api_router.include_router(waitlist_router)

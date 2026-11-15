@@ -34,6 +34,15 @@
 
   --shadow-card:
     0 1px 2px rgb(16 24 40 / 0.03), 0 18px 40px -24px rgb(16 24 40 / 0.16);
+
+  /* Marketing site palette (from the landing page designs). */
+  --color-land-green: #004524;
+  --color-land-accent: #008f4c;
+  --color-land-canvas: #f2f8f4;
+  --color-land-mint: #bce8d1;
+  --color-land-ink: #17251d;
+  --color-land-muted: #53655b;
+  --color-land-line: #e3ebe6;
 }
 
 @layer base {
@@ -57,6 +66,19 @@
   }
 }
 
+@keyframes landing-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.landing-marquee {
+  animation: landing-marquee 36s linear infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -65,5 +87,10 @@
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .landing-marquee {
+    animation: none;
+    transform: none;
   }
 }

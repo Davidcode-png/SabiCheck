@@ -11,6 +11,7 @@ type LogoProps = {
   className?: string;
   markClassName?: string;
   wordmarkClassName?: string;
+  taglineClassName?: string;
   /** Optional line under the wordmark, e.g. "Business Portal". */
   tagline?: string;
 };
@@ -22,6 +23,7 @@ export function Logo({
   className,
   markClassName,
   wordmarkClassName,
+  taglineClassName,
   tagline,
 }: LogoProps) {
   const wordmark = (
@@ -53,7 +55,12 @@ export function Logo({
         tagline ? (
           <span className="flex flex-col items-start gap-1">
             {wordmark}
-            <span className="text-[9px] font-bold uppercase leading-none tracking-[0.16em] text-muted">
+            <span
+              className={cn(
+                "font-bold uppercase leading-none text-muted",
+                taglineClassName ?? "text-[9px] tracking-[0.16em]",
+              )}
+            >
               {tagline}
             </span>
           </span>

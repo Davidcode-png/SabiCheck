@@ -11,6 +11,7 @@ from src.domain.models.product import *
 from src.domain.models.distributor import *
 from src.domain.models.greenbook import *
 from src.domain.models.verification_code import *
+from src.domain.models.waitlist import *
 
 from alembic import context
 
