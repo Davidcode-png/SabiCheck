@@ -55,8 +55,7 @@ export function MatchResultScreen({
           strokeWidth={1.8}
         />
         <p className="text-sm leading-5">
-          Code matches a listed record. This does not guarantee the pack is
-          genuine.
+          This product exists in our database.
         </p>
       </div>
 
